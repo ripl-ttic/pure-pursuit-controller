@@ -1377,7 +1377,8 @@ int main (int argc, char *argv[])
     self->lcmgl = bot_lcmgl_init (self->lcm, "TRAJECTORY_CONTROLLER");   
 
     self->mp_prediction = mp_prediction_create (self->lcm);
-    self->mp_prediction->wheel_base = 0.6;//****Sachi - get this from param  //1.486;
+
+    self->mp_prediction->wheelbase = bot_param_get_double_or_fail (param, "robot.wheelbase");
     self->mp_prediction->K_str = 2.0;
     self->mp_prediction->K_ct = 1.75;
 

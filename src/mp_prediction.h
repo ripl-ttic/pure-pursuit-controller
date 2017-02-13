@@ -32,7 +32,7 @@ typedef struct _mp_input_t {
 typedef struct _mp_prediction_t {
 
     // Parameters of the vehicle model
-    double wheel_base; // wheel base 
+    double wheelbase; // wheel base 
 
     // Tunable controller parameters
     double K_str;

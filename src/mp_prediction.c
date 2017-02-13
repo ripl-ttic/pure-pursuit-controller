@@ -47,7 +47,7 @@ int mp_prediction_propagate_step (mp_prediction_t *self, mp_state_t *state, mp_i
 
     double del_x = input->v * cos (state->t) * del_time;
     double del_y = input->v * sin (state->t) * del_time;
-    double del_t = (tan (input->d) / self->wheel_base) * del_time;
+    double del_t = (tan (input->d) / self->wheelbase) * del_time;
 
     state_out->x = state->x + del_x; 
     state_out->y = state->y + del_y; 
