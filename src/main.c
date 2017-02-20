@@ -522,6 +522,7 @@ free_for_drive_to_target (state_t *self, double start_x, double start_y,
 {
     
     if(!self->obstacles_last && !self->sim_rect_last ||  !self->bot_pose_last){
+        fprintf (stderr, "No obstacle list or no robot pose\n");
         return 1;
     }
     else{
