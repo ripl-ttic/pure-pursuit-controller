@@ -20,12 +20,12 @@
                       // This must be updated if the execution loop time is modified
 
 // Lateral controller coefficients 
-#define K_CT 0.9//0.7//0.3//0.7
-#define K_CT_TRAJ 1.8
+#define K_CT 1.5 //0.9//0.7//0.3//0.7
+#define K_CT_TRAJ 2.0 //1.8
 
 
 // Longitudinal controller coefficients
-#define KP 0.75
+#define KP 1.5 //0.75
 #define KI 1.0
 
 #define MAXINTEGRAL 0.5    // Saturation value of the integral term
@@ -35,8 +35,8 @@
 #define V_CMD_MIN 0.05
 #define V_CMD_CUTOFF 2.0//0.5
 
-#define K_STR 2.0//1.5//1.0//2.0
-#define K_STR_TRAJ 1.0//2.0 //1.0 was used on the chair 
+#define K_STR 3.0//2.0//1.5//1.0//2.0
+#define K_STR_TRAJ 2.0 //1.0//2.0 //1.0 was used on the chair 
 
 #define K_REL_SPC 0.005
 

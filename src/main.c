@@ -25,13 +25,13 @@
 #define ENABLE_SECOND_APPROACH 1
 #define ENABLE_TELEPORT 0
 
-#define MAST_CORRECTION 1.4
-
 //we need to use the small stopping distance only when the robot is at the last goal waypoint
-#define STOPPING_DIST 0.5//0.5//0.5
-#define STOPPING_DIST_SMALL 0.2 //Sachi - reduce this to get the robot close - esp to elevators
+// MOVED TO CONFIG
+//#define STOPPING_DIST 0.5//0.5//0.5
+//#define STOPPING_DIST_SMALL 0.2 //Sachi - reduce this to get the robot close - esp to elevators
 
-#define VEHICLE_TURNING_FOOTPRINT 0.3 //0.6 //actually 0.6
+// Determined from robot width & length in config
+//#define VEHICLE_TURNING_FOOTPRINT 0.6 //0.3 //0.6 //actually 0.6
  
 #define COLLISION_CHECK_PATH_DISTANCE 2.0 // Distance ahead of robot along path to check for collisions
 #define LINE_COLLISION_CHECK_DELTA 0.3 // Spacing for collision checking to next reference point
@@ -90,6 +90,13 @@ struct _state_t {
 
     double translational_vel_last;
     double rotational_vel_last;
+
+    double stopping_distance;
+    double stopping_distance_small;
+
+    double vehicle_turning_footprint;
+
+    double line_collision_check_delta;
 
     int error_mode;
 
@@ -488,7 +495,7 @@ int free_for_rotation(state_t *self){
                 double max_rect_size 
                     = (rect_curr->size[0] > rect_curr->size[1]) ? rect_curr->size[0] : rect_curr->size[1];
 
-                if(absolute_distance < max_rect_size + VEHICLE_TURNING_FOOTPRINT){
+                if(absolute_distance < max_rect_size + self->vehicle_turning_footprint){
                     return 0;
                 }
             }
@@ -503,7 +510,7 @@ int free_for_rotation(state_t *self){
                 double max_rect_size 
                 = (rect_curr->size[0] > rect_curr->size[1]) ? rect_curr->size[0] : rect_curr->size[1];
                 
-                if(absolute_distance < max_rect_size + VEHICLE_TURNING_FOOTPRINT){
+                if(absolute_distance < max_rect_size + self->vehicle_turning_footprint){
                     return 0;
                 }
             }
@@ -545,7 +552,7 @@ free_for_drive_to_target (state_t *self, double start_x, double start_y,
                     double max_rect_size 
                         = (rect_curr->size[0] > rect_curr->size[1]) ? rect_curr->size[0] : rect_curr->size[1];
 
-                    if(absolute_distance < max_rect_size + VEHICLE_TURNING_FOOTPRINT){
+                    if(absolute_distance < max_rect_size + self->vehicle_turning_footprint){
                         if (self->verbose)
                             fprintf (stdout, "Obstacle detected along straight line segment between robot and next reference point\n");
                         return 0;
@@ -563,7 +570,7 @@ free_for_drive_to_target (state_t *self, double start_x, double start_y,
                     double max_rect_size 
                         = (rect_curr->size[0] > rect_curr->size[1]) ? rect_curr->size[0] : rect_curr->size[1];
                     
-                    if(absolute_distance < max_rect_size + VEHICLE_TURNING_FOOTPRINT){
+                    if(absolute_distance < max_rect_size + self->vehicle_turning_footprint){
                         if (self->verbose)
                             fprintf (stdout, "Simulated obstacle detected along straight line segment between robot and next reference point\n");
                         return 0;
@@ -571,7 +578,7 @@ free_for_drive_to_target (state_t *self, double start_x, double start_y,
                 }
             }
 
-            d += LINE_COLLISION_CHECK_DELTA;
+            d += self->line_collision_check_delta;
         }
   
         return 1; 
@@ -1133,13 +1140,13 @@ on_trajectory_controller_timer (gpointer data)
         if(!self->turn_in_place){
             //this is where the magic happens
 
-            double stop_dist = STOPPING_DIST;
+            double stop_dist = self->stopping_distance;
 
             if(self->current_ref_point == self->num_ref_points){
                 if(self->verbose){
                     fprintf(stderr, "+++++ Driving towards the last waypoint - using the small stopping distance\n");
                 }
-                stop_dist = STOPPING_DIST_SMALL; 
+                stop_dist = self->stopping_distance_small; 
             }
 
             // Look ahead along a desired distance along the path for obstacles
@@ -1302,7 +1309,7 @@ usage (int argc, char ** argv)
              "    -a             Replace current waypoints with new waypoints\n"
              //"    -j             Subservient to joystick (L1 button must be depressed)\n"
              "    -D             Disable collision check\n"
-             "    -d DISTANCE    Check for collisions up to DISTANCE along path"
+             "    -d DISTANCE    Check for collisions up to DISTANCE along path\n"
              "    -v             Verbose output\n"
              "    -h             Print this usage and exit\n"
              "\n\n", argv[0]);
@@ -1346,9 +1353,9 @@ int main (int argc, char *argv[])
         }
     }
     
-    if (self->collision_check_path_distance < LINE_COLLISION_CHECK_DELTA) {
-        self->collision_check_path_distance = LINE_COLLISION_CHECK_DELTA;
-        fprintf (stdout, "The collision check distance can't be less than %.2f, setting to %.2f\n", LINE_COLLISION_CHECK_DELTA,
+    if (self->collision_check_path_distance < self->line_collision_check_delta) {
+        self->collision_check_path_distance = self->line_collision_check_delta;
+        fprintf (stdout, "The collision check distance can't be less than %.2f, setting to %.2f\n", self->line_collision_check_delta,
                  self->collision_check_path_distance);
     }
 
@@ -1379,9 +1386,17 @@ int main (int argc, char *argv[])
 
     self->mp_prediction = mp_prediction_create (self->lcm);
 
+    self->stopping_distance = bot_param_get_double_or_fail (param, "stopping_distance");
+    self->stopping_distance_small = bot_param_get_double_or_fail (param, "stopping_distance_small");
+    self->line_collision_check_delta = bot_param_get_double_or_fail (param, "line_collision_check_delta");
+    
     self->mp_prediction->wheelbase = bot_param_get_double_or_fail (param, "robot.wheelbase");
-    self->mp_prediction->K_str = 2.0;
-    self->mp_prediction->K_ct = 1.75;
+    self->mp_prediction->K_str = bot_param_get_double_or_fail (param, "pp_controller.K_str"); // 2.0;
+    self->mp_prediction->K_ct = bot_param_get_double_or_fail (param, "pp_controller.K_ct"); //1.75;
+
+    double length = bot_param_get_double_or_fail (param, "robot.length");
+    double width = bot_param_get_double_or_fail (param, "robot.width");
+    self->vehicle_turning_footprint = sqrt((width/2)*(width/2) + (length/2)*(length/2));
 
     self->obstacles_last = NULL;
     self->sim_rect_last = NULL;
