@@ -65,6 +65,25 @@ typedef struct _mp_control_utils_t {
 
     mp_control_aux_t mp_control_aux;
 
+    // Lateral controller coefficients
+    double K_ct;
+    double K_ct_traj;
+
+    // Longitudinal controller coefficients
+    double Kp;
+    double Ki;
+
+    // Steering
+    double K_str;
+    double K_str_traj;
+
+    double K_rel_spc;
+
+    double max_integral; // Saturation value for integral term
+    double default_integral_state;
+
+    double dt;
+
     gboolean verbose;
 
 } mp_control_utils_t;

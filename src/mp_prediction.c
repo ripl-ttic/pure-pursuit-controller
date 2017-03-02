@@ -1,7 +1,8 @@
 #include "mp_prediction.h"
 
-#define MAX_VEL 0.5//0.1
-#define MAX_STEER 9.0
+// MOVED TO CONFIG
+//#define MAX_VEL 0.5//0.1
+//#define MAX_STEER 9.0
 
 #define VEHICLE_SECURITY_RADIUS 1.3          // If any obstacle gets withing the security radius, the vehicle will stop manipulation
 #define DISTANCE_FROM_CENTER_TO_TINE_TIP 0.0 // Distance from the center of the vehicle to the tip of the tines
@@ -87,11 +88,11 @@ int mp_prediction_propagate_compute_control (mp_prediction_t *self,
         return 0;
     
     double steering = - self->K_str * (atan(self->K_ct * error_e) + error_t);
-    if (steering < -MAX_STEER * M_PI/180.0)
-        steering = -MAX_STEER * M_PI/180.0;
+    if (steering < -self->max_steer * M_PI/180.0)
+        steering = -self->max_steer * M_PI/180.0;
 
-    if (steering > MAX_STEER * M_PI/180.0)
-        steering = MAX_STEER * M_PI/180.0;
+    if (steering > self->max_steer * M_PI/180.0)
+        steering = self->max_steer * M_PI/180.0;
     
     *steering_out = steering;
     
@@ -133,7 +134,7 @@ int mp_prediction_propagate_trajectory (mp_prediction_t *self, mp_state_t *state
         mp_input_t *input_curr = mp_prediction_new_input (self);
        
         
-        input_curr->v = MAX_VEL;
+        input_curr->v = self->max_tv;
         input_curr->d = steering;
         
         mp_prediction_propagate_step (self, state_prev, input_curr, del_time, state_curr);

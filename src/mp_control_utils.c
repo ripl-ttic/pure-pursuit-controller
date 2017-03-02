@@ -16,32 +16,32 @@
 #include "mp_control_utils.h"
 
 #define PI M_PI
-#define DT 1/50.0     // Controller execution loop time
+//#define DT 1/50.0     // Controller execution loop time
                       // This must be updated if the execution loop time is modified
 
 // Lateral controller coefficients 
-#define K_CT 1.5 //0.9//0.7//0.3//0.7
-#define K_CT_TRAJ 2.0 //1.8
+//#define K_CT 1.5 //0.9//0.7//0.3//0.7
+//#define K_CT_TRAJ 2.0 //1.8
 
 
 // Longitudinal controller coefficients
-#define KP 1.5 //0.75
-#define KI 1.0
+//#define KP 1.5 //0.75
+//#define KI 1.0
 
-#define MAXINTEGRAL 0.5    // Saturation value of the integral term
+//#define MAXINTEGRAL 0.5    // Saturation value of the integral term
 
 #define V_CMD_SAFETY_DEFAULT 0.15 // when v_cmd > (V_CMD_CUTOFF+0.01), this value is applied
                                   // but it would not happen
 #define V_CMD_MIN 0.05
 #define V_CMD_CUTOFF 2.0//0.5
 
-#define K_STR 3.0//2.0//1.5//1.0//2.0
-#define K_STR_TRAJ 2.0 //1.0//2.0 //1.0 was used on the chair 
+//#define K_STR 3.0//2.0//1.5//1.0//2.0
+//#define K_STR_TRAJ 2.0 //1.0//2.0 //1.0 was used on the chair 
 
 #define K_REL_SPC 0.005
 
 
-#define DEFAULT_INTEGRAL_STATE  -0.4
+//#define DEFAULT_INTEGRAL_STATE  -0.4
 
 
 mp_control_utils_t *
@@ -50,7 +50,7 @@ mp_control_new (void)
     mp_control_utils_t *mp_cont;
     mp_cont = (mp_control_utils_t *) malloc (sizeof(mp_control_utils_t));
     
-    mp_cont->veh_cont_states.integral = DEFAULT_INTEGRAL_STATE;
+    mp_cont->veh_cont_states.integral = mp_cont->default_integral_state;
 
     mp_cont->bot_states = NULL;
     mp_cont->target_states = NULL;
@@ -81,7 +81,7 @@ void
 mp_control_veh_cont_init (mp_control_utils_t *self) {
     if (!self)
         return;
-    self->veh_cont_states.integral = DEFAULT_INTEGRAL_STATE;
+    self->veh_cont_states.integral = self->default_integral_state;
 }
 
 
@@ -291,9 +291,9 @@ mp_control_compute_control_steer_via_target_pose (mp_control_utils_t *self, doub
 
     
     
-    double cross_track_error_correction = K_STR*atan (K_CT * cross_track_error);
+    double cross_track_error_correction = self->K_str*atan (self->K_ct * cross_track_error);
 
-    double relative_angle_correction = K_STR*relative_angle;
+    double relative_angle_correction = self->K_str*relative_angle;
 
     
 
@@ -361,8 +361,8 @@ mp_control_compute_lon_control_via_distance (mp_control_utils_t *self, double *c
         v_command = V_CMD_MIN;
 
     // calculate the control action
-    double proportional_control_action =  KP*(v_command - self->bot_velocity);
-    double integral_control_action = KI*(self->veh_cont_states.integral);
+    double proportional_control_action =  self->Kp*(v_command - self->bot_velocity);
+    double integral_control_action = self->Ki*(self->veh_cont_states.integral);
     *control_action = proportional_control_action + integral_control_action;
 
     // TODO: Some more heuristics here for better target engagement
@@ -377,9 +377,9 @@ mp_control_compute_lon_control_via_distance (mp_control_utils_t *self, double *c
         *control_action = -1.0;
 
     // update integral state
-    self->veh_cont_states.integral += (v_command - self->bot_velocity)*DT;
-    if (self->veh_cont_states.integral >= MAXINTEGRAL)
-        self->veh_cont_states.integral = MAXINTEGRAL;
+    self->veh_cont_states.integral += (v_command - self->bot_velocity)*self->dt;
+    if (self->veh_cont_states.integral >= self->max_integral)
+        self->veh_cont_states.integral = self->max_integral;
     
     if (self->verbose) {
         printf ("Control action: %5.5lf; Distance : %5.5lf \n", 
@@ -422,8 +422,8 @@ mp_control_compute_lon_control_via_target_pose (mp_control_utils_t *self, double
         v_command = V_CMD_MIN;
 
     // calculate the control action
-    double proportional_control_action =  KP*(v_command - self->bot_velocity);
-    double integral_control_action = KI*(self->veh_cont_states.integral);
+    double proportional_control_action =  self->Kp*(v_command - self->bot_velocity);
+    double integral_control_action = self->Ki*(self->veh_cont_states.integral);
     *control_action = proportional_control_action + integral_control_action;
 
     // TODO: Some more heuristics here for better target engagement
@@ -438,9 +438,9 @@ mp_control_compute_lon_control_via_target_pose (mp_control_utils_t *self, double
         *control_action = -1.0;
 
     // update integral state
-    self->veh_cont_states.integral += (v_command - self->bot_velocity)*DT;
-    if (self->veh_cont_states.integral >= MAXINTEGRAL)
-        self->veh_cont_states.integral = MAXINTEGRAL;
+    self->veh_cont_states.integral += (v_command - self->bot_velocity)*self->dt;
+    if (self->veh_cont_states.integral >= self->max_integral)
+        self->veh_cont_states.integral = self->max_integral;
     
     if (self->verbose) {
         printf ("P:%2.5lf I:%2.5lf - Control action: %5.5lf; Distance to target: %5.5lf, Target in front: %d \n", 
@@ -509,8 +509,8 @@ mp_control_compute_lon_control_backup (mp_control_utils_t *self, double *control
         v_command = V_CMD_MIN;
 
     // calculate the control action
-    double proportional_control_action =  KP*(v_command - self->bot_velocity);
-    double integral_control_action = KI*(self->veh_cont_states.integral);
+    double proportional_control_action =  self->Kp*(v_command - self->bot_velocity);
+    double integral_control_action = self->Ki*(self->veh_cont_states.integral);
     *control_action = proportional_control_action + integral_control_action;
     
     // Saturate the control action.
@@ -520,9 +520,9 @@ mp_control_compute_lon_control_backup (mp_control_utils_t *self, double *control
         *control_action = -1.0;
 
     // update integral state
-    self->veh_cont_states.integral += (v_command - self->bot_velocity)*DT;
-    if (self->veh_cont_states.integral >= MAXINTEGRAL)
-        self->veh_cont_states.integral = MAXINTEGRAL;
+    self->veh_cont_states.integral += (v_command - self->bot_velocity)*self->dt;
+    if (self->veh_cont_states.integral >= self->max_integral)
+        self->veh_cont_states.integral = self->max_integral;
     
     if (self->verbose) {
         printf ("Control action: %5.5lf; Distance to target: %5.5lf, Target in front: %d \n", 
@@ -622,9 +622,9 @@ mp_control_compute_control_steer_via_traj (mp_control_utils_t *self, erlcm_engag
     
     double relative_angle = theta_proj - self->bot_states->yaw;
    
-    double cross_track_error_correction = K_STR_TRAJ*atan (K_CT_TRAJ * cross_track_error);
+    double cross_track_error_correction = self->K_str_traj*atan (self->K_ct_traj * cross_track_error);
 
-    double relative_angle_correction = K_STR_TRAJ*K_REL_SPC*relative_angle;
+    double relative_angle_correction = self->K_str_traj*K_REL_SPC*relative_angle;
 
     int rel_quad_bot = mp_control_compute_rel_quad (self->bot_states->x, self->bot_states->y,
                                                     x_proj, y_proj, theta_proj); 

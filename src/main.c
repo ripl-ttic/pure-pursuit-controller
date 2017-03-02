@@ -20,9 +20,6 @@
 #include <bot_param/param_client.h>
 
 
-#define ENABLE_PREDICTION 0
-#define ENABLE_CANCELING 0
-#define ENABLE_SECOND_APPROACH 1
 #define ENABLE_TELEPORT 0
 
 //we need to use the small stopping distance only when the robot is at the last goal waypoint
@@ -34,7 +31,7 @@
 //#define VEHICLE_TURNING_FOOTPRINT 0.6 //0.3 //0.6 //actually 0.6
  
 #define COLLISION_CHECK_PATH_DISTANCE 2.0 // Distance ahead of robot along path to check for collisions
-#define LINE_COLLISION_CHECK_DELTA 0.3 // Spacing for collision checking to next reference point
+//#define LINE_COLLISION_CHECK_DELTA 0.3 // Spacing for collision checking to next reference point
 
 /*****************************************/
 #define RENDER_REF_POINTS 1
@@ -1255,7 +1252,7 @@ on_trajectory_controller_timer (gpointer data)
                         
     
 #if ENABLE_TELEPORT
-                //Teleport the Forklift
+                //Teleport the robot
                 botlcm_pose_t p;
                 p.pos[0] = 0.0;
                 p.pos[1] = 0.0;
@@ -1359,7 +1356,8 @@ int main (int argc, char *argv[])
                  self->collision_check_path_distance);
     }
 
-    fprintf (stdout, "Checking the path %.2f meters ahead for collisions\n", self->collision_check_path_distance);
+    if (self->perform_collision_check)
+        fprintf (stdout, "Checking the path %.2f meters ahead for collisions\n", self->collision_check_path_distance);
 
     self->error_mode = 0;
     self->tc_state = ERLCM_TRAJECTORY_CONTROLLER_STATUS_T_STATE_IDLE;
@@ -1377,18 +1375,32 @@ int main (int argc, char *argv[])
 
     self->default_tv = bot_param_get_double_or_fail (param, "motion_planner.speed_design.default_tv");
     self->max_rv = bot_param_get_double_or_fail (param, "motion_planner.speed_design.max_rv");
-
     self->current_tv = self->default_tv; 
 
     self->mp_cont = mp_control_new ();
     
+    self->mp_cont->K_ct = bot_param_get_double_or_fail (param, "pp_controller.K_ct");
+    self->mp_cont->K_ct_traj = bot_param_get_double_or_fail (param, "pp_controller.K_ct_traj");
+    self->mp_cont->Kp = bot_param_get_double_or_fail (param, "pp_controller.Kp");
+    self->mp_cont->Ki = bot_param_get_double_or_fail (param, "pp_controller.Ki");
+    self->mp_cont->K_str = bot_param_get_double_or_fail (param, "pp_controller.K_str");
+    self->mp_cont->K_str_traj = bot_param_get_double_or_fail (param, "pp_controller.K_str_traj");
+    self->mp_cont->max_integral = bot_param_get_double_or_fail (param, "pp_controller.max_integral");
+    self->mp_cont->default_integral_state = bot_param_get_double_or_fail (param, "pp_controller.default_integral_state");
+    self->mp_cont->dt = bot_param_get_double_or_fail (param, "pp_controller.dt");
+
+
+
     self->lcmgl = bot_lcmgl_init (self->lcm, "TRAJECTORY_CONTROLLER");   
 
     self->mp_prediction = mp_prediction_create (self->lcm);
 
-    self->stopping_distance = bot_param_get_double_or_fail (param, "stopping_distance");
-    self->stopping_distance_small = bot_param_get_double_or_fail (param, "stopping_distance_small");
-    self->line_collision_check_delta = bot_param_get_double_or_fail (param, "line_collision_check_delta");
+    self->stopping_distance = bot_param_get_double_or_fail (param, "pp_controller.stopping_distance");
+    self->stopping_distance_small = bot_param_get_double_or_fail (param, "pp_controller.stopping_distance_small");
+    self->line_collision_check_delta = bot_param_get_double_or_fail (param, "pp_controller.line_collision_check_delta");
+
+    self->mp_prediction->max_tv = self->default_tv;
+    self->mp_prediction->max_steer = bot_param_get_double_or_fail (param, "pp_controller.max_steer");
     
     self->mp_prediction->wheelbase = bot_param_get_double_or_fail (param, "robot.wheelbase");
     self->mp_prediction->K_str = bot_param_get_double_or_fail (param, "pp_controller.K_str"); // 2.0;

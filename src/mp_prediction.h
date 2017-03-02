@@ -37,6 +37,9 @@ typedef struct _mp_prediction_t {
     // Tunable controller parameters
     double K_str;
     double K_ct;
+
+    double max_tv;
+    double max_steer;
     
     bot_lcmgl_t *lcmgl; // To draw the path.
 } mp_prediction_t;
