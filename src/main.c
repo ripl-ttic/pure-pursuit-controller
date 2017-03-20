@@ -46,6 +46,7 @@ typedef struct _state_t state_t;
 struct _state_t {
     lcm_t *lcm;
     bot_lcmgl_t *lcmgl;
+    bot_lcmgl_t *lcmgl_collision;
     
     GMainLoop *mainloop;
     guint status_update_timer_id;
@@ -92,6 +93,7 @@ struct _state_t {
     double stopping_distance_small;
 
     double vehicle_turning_footprint;
+    double vehicle_width;
 
     double line_collision_check_delta;
 
@@ -549,7 +551,10 @@ free_for_drive_to_target (state_t *self, double start_x, double start_y,
                     double max_rect_size 
                         = (rect_curr->size[0] > rect_curr->size[1]) ? rect_curr->size[0] : rect_curr->size[1];
 
-                    if(absolute_distance < max_rect_size + self->vehicle_turning_footprint){
+                    if(absolute_distance < max_rect_size + self->vehicle_width/2){
+                        /* fprintf (stdout, "absolute_distance = %0.2f, max_rect_size = %.2f, width/2 = %.2f\n", */
+                        /*          absolute_distance, max_rect_size, self->vehicle_width/2); */
+    
                         if (self->verbose)
                             fprintf (stdout, "Obstacle detected along straight line segment between robot and next reference point\n");
                         return 0;
@@ -567,7 +572,7 @@ free_for_drive_to_target (state_t *self, double start_x, double start_y,
                     double max_rect_size 
                         = (rect_curr->size[0] > rect_curr->size[1]) ? rect_curr->size[0] : rect_curr->size[1];
                     
-                    if(absolute_distance < max_rect_size + self->vehicle_turning_footprint){
+                    if(absolute_distance < max_rect_size + self->vehicle_width/2){
                         if (self->verbose)
                             fprintf (stdout, "Simulated obstacle detected along straight line segment between robot and next reference point\n");
                         return 0;
@@ -1169,6 +1174,25 @@ on_trajectory_controller_timer (gpointer data)
                 collision_check_distance += hypot (self->ref_point_list->ref_points[ref_point_index].x - start_x,
                                                    self->ref_point_list->ref_points[ref_point_index].y - start_y);
 
+                /* fprintf (stdout, "is_collision_free = %d, start_x = %.2f, start_y = %.2f, x = %.2f, y = %.2f\n", */
+                /*          is_collision_free, start_x, start_y, self->ref_point_list->ref_points[ref_point_index].x, self->ref_point_list->ref_points[ref_point_index].y); */
+
+
+                // Render collision detection
+                if (!is_collision_free) {
+                    bot_lcmgl_t *lcmgl = self->lcmgl_collision;
+                    
+                    lcmglColor3f (3.0, 0.0, 0.0); 
+                    lcmglLineWidth (1.2);
+                    lcmglBegin (GL_LINE_STRIP);
+                    
+                    lcmglVertex3d (start_x, start_y, 0);
+                    lcmglVertex3d (self->ref_point_list->ref_points[ref_point_index].x, self->ref_point_list->ref_points[ref_point_index].y, 0);
+                    lcmglEnd();
+                    
+                    bot_lcmgl_switch_buffer (lcmgl);
+                }   
+                 
                 if (is_collision_free == 0)
                     break;
 
@@ -1392,6 +1416,7 @@ int main (int argc, char *argv[])
 
 
     self->lcmgl = bot_lcmgl_init (self->lcm, "TRAJECTORY_CONTROLLER");   
+    self->lcmgl_collision = bot_lcmgl_init (self->lcm, "TRAJECTORY_CONTROLLER_COLLISION");   
 
     self->mp_prediction = mp_prediction_create (self->lcm);
 
@@ -1409,6 +1434,7 @@ int main (int argc, char *argv[])
     double length = bot_param_get_double_or_fail (param, "robot.length");
     double width = bot_param_get_double_or_fail (param, "robot.width");
     self->vehicle_turning_footprint = sqrt((width/2)*(width/2) + (length/2)*(length/2));
+    self->vehicle_width = width;
 
     self->obstacles_last = NULL;
     self->sim_rect_last = NULL;
