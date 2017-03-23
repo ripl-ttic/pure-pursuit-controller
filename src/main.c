@@ -1141,26 +1141,27 @@ on_trajectory_controller_timer (gpointer data)
 
         if(!self->turn_in_place){
             //this is where the magic happens
-
+            
             double stop_dist = self->stopping_distance;
-
+            
             if(self->current_ref_point == self->num_ref_points){
                 if(self->verbose){
                     fprintf(stderr, "+++++ Driving towards the last waypoint - using the small stopping distance\n");
                 }
                 stop_dist = self->stopping_distance_small; 
             }
-
+            
             // Look ahead along a desired distance along the path for obstacles
             int ref_point_index = self->current_ref_point;
-	    //double start_x = self->bot_pose_last->pos[0];
-	    double start_x = self->ref_point_list->ref_points[ref_point_index].x;
+            //double start_x = self->bot_pose_last->pos[0];
+            double start_x = self->ref_point_list->ref_points[ref_point_index].x;
             //double start_y = self->bot_pose_last->pos[1];
-	    double start_y = self->ref_point_list->ref_points[ref_point_index].y;
+            double start_y = self->ref_point_list->ref_points[ref_point_index].y;
             ref_point_index++;
             int is_collision_free = 1;
             double collision_check_distance = 0;
 
+            //fprintf (stdout, "perform_collision_check = %d\n", self->perform_collision_check);
             while (self->perform_collision_check & collision_check_distance < self->collision_check_path_distance &
                    ref_point_index < self->num_ref_points) {
 
@@ -1344,7 +1345,7 @@ int main (int argc, char *argv[])
     g_thread_init(NULL);
     int c;
 
-    self->trash_wp = 1;
+    self->trash_wp = 0;
     self->perform_collision_check = 1;
     self->collision_check_path_distance = COLLISION_CHECK_PATH_DISTANCE;
     
@@ -1359,7 +1360,7 @@ int main (int argc, char *argv[])
             case 'd':
                 self->collision_check_path_distance = strtod(optarg, 0);
             case 'a':
-                self->trash_wp = 0;
+                self->trash_wp = 1;
                 break;            
             case 'e':
                 self->envoy = 1;
