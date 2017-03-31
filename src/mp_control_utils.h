@@ -114,6 +114,9 @@ int
 mp_control_compute_relangle_crosstrack_via_target_pose (mp_control_utils_t *self, double *relangle, double *crosstrack);
 
 int 
+mp_control_compute_control_deltav_via_target_pose (mp_control_utils_t *self, double *steer_angle);
+
+int 
 mp_control_compute_control_steer_via_target_pose (mp_control_utils_t *self, double *steer_angle);
 
 int 
