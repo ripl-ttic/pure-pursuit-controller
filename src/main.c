@@ -87,7 +87,9 @@ struct _state_t {
 
     // Default translational and maximum rotational velocities defined in param config
     double default_tv;
+    double thresh_tv;
     double max_rv;
+    double max_rv_in_place;
 
     double current_tv;
 
@@ -762,6 +764,14 @@ manipulation_controller_turn_towards_target (state_t *self,
     double threshold = bot_to_radians(40);
     //double max_rv = 0.75;//0.5;
 
+    // In order to avoid jerky motion when turning on carpet, use different
+    // maximum rotational velocities when moving forward at a sufficiently
+    // high velocity. Otherwise, use a lower max_rv
+    double max_rv = self->max_rv;
+    if (fabs(self->bot_pose_last->vel[0]) < self->thresh_tv)
+        max_rv = self->max_rv_in_place;
+    
+
     double rv = 0;
 
     int is_free = 1;
@@ -769,7 +779,7 @@ manipulation_controller_turn_towards_target (state_t *self,
         is_free = free_for_rotation(self);
 
     if(is_free){
-        rv = bot_clamp(heading_difference/ threshold, -1.0, 1.0) * self->max_rv;// / heading_max * M_PI;
+        rv = bot_clamp(heading_difference/ threshold, -1.0, 1.0) * max_rv;// / heading_max * M_PI;
         //rv = bot_clamp(heading_difference, -threshold, threshold) * self->max_rv;// / heading_max * M_PI;
         if (self->verbose)
             fprintf(stderr, "Turning Towards Goal %f \n", rv);
@@ -926,8 +936,14 @@ manipulation_controller_drive_to_target (state_t *self,
 
     //v_cmd is 0 for the last point - this causes the rv to be zero as well
 
+    // In order to avoid jerky motion when turning on carpet, use different
+    // maximum rotational velocities when moving forward at a sufficiently
+    // high velocity. Otherwise, use a lower max_rv
+    double max_rv = self->max_rv;
+    if (fabs(self->bot_pose_last->vel[0]) < self->thresh_tv)
+        max_rv = self->max_rv_in_place;
 
-    double rv = bot_clamp(v_cmd * tan(steer_cmd), -self->max_rv, self->max_rv);
+    double rv = bot_clamp(v_cmd * tan(steer_cmd), -max_rv, max_rv);
 
     //note - if rv gets clamped - this causes us to overshoot the arc
 
@@ -1559,6 +1575,8 @@ int main (int argc, char *argv[])
 
     self->default_tv = bot_param_get_double_or_fail (param, "motion_planner.speed_design.default_tv");
     self->max_rv = bot_param_get_double_or_fail (param, "motion_planner.speed_design.max_rv");
+    self->max_rv_in_place = bot_param_get_double_or_fail (param, "motion_planner.speed_design.max_rv_in_place");
+    self->thresh_tv = bot_param_get_double_or_fail (param, "motion_planner.speed_design.thresh_tv");
     self->current_tv = self->default_tv;
 
     self->mp_cont = mp_control_new ();
