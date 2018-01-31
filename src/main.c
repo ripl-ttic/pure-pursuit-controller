@@ -235,7 +235,7 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
 
 
         if(self->ref_point_list && self->ref_point_list->commited_point_id == -1){
-            fprintf(stderr, "+++++++++++++++ Commited Point error : +++\n");
+            fprintf(stderr, "+++++++++++++++ Committed Point error : +++\n");
         }
 
         fprintf(stderr, "New List size : %d Committed ID : %d\n",
