@@ -6,6 +6,7 @@
 #include <bot_core/bot_core.h>
 #include <lcmtypes/hr_lcmtypes.h>
 #include <lcmtypes/rrtstar.h>
+#include <lcmtypes/obs_lcmtypes.h>
 
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
@@ -118,8 +119,8 @@ struct _state_t {
 
     mp_prediction_t *mp_prediction;
 
-    erlcm_obstacle_list_t *obstacles_last;
-    erlcm_rect_list_t *sim_rect_last;
+    obs_obstacle_list_t *obstacles_last;
+    obs_rect_list_t *sim_rect_last;
 
   //erlcm_joystick_state_t *joystick_state_msg;
 
@@ -154,15 +155,15 @@ mp_can_cancel_state (state_t *self) {
 
 static void
 on_obstacles (const lcm_recv_buf_t *rbuf, const char *channel,
-                  const erlcm_obstacle_list_t *msg, void *user) {
+                  const obs_obstacle_list_t *msg, void *user) {
 
     state_t *self = (state_t *) user;
 
     g_mutex_lock (self->mutex);
 
     if (self->obstacles_last)
-        erlcm_obstacle_list_t_destroy (self->obstacles_last);
-    self->obstacles_last = erlcm_obstacle_list_t_copy (msg);
+        obs_obstacle_list_t_destroy (self->obstacles_last);
+    self->obstacles_last = obs_obstacle_list_t_copy (msg);
 
     g_mutex_unlock (self->mutex);
 
@@ -171,15 +172,15 @@ on_obstacles (const lcm_recv_buf_t *rbuf, const char *channel,
 
 static void
 on_sim_rects(const lcm_recv_buf_t * rbuf, const char *channel,
-             const erlcm_rect_list_t *msg, void *user)
+             const obs_rect_list_t *msg, void *user)
 {
     state_t *self = (state_t *) user;
 
     g_mutex_lock (self->mutex);
     if (self->sim_rect_last){
-        erlcm_rect_list_t_destroy(self->sim_rect_last);
+        obs_rect_list_t_destroy(self->sim_rect_last);
     }
-    self->sim_rect_last = erlcm_rect_list_t_copy(msg);
+    self->sim_rect_last = obs_rect_list_t_copy(msg);
 
     g_mutex_unlock (self->mutex);
 }
@@ -294,7 +295,7 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
             mp_control_update_target_states (self->mp_cont, self->ref_point_list->ref_points[self->current_ref_point].x,
                                              self->ref_point_list->ref_points[self->current_ref_point].y,
                                              self->ref_point_list->ref_points[self->current_ref_point].t);
-                                             
+
 
             mp_control_compute_distance_to_target (self->mp_cont, &distance_to_target, &target_in_front);
 
@@ -572,7 +573,7 @@ int free_for_rotation(state_t *self){
         if(self->obstacles_last){
             for(int i=0; i < self->obstacles_last->rects.num_rects; i++){
 
-                erlcm_rect_t *rect_curr =  &(self->obstacles_last->rects.rects[i]);
+                obs_rect_t *rect_curr =  &(self->obstacles_last->rects.rects[i]);
                 double absolute_distance = hypot(self->obstacles_last->rects.xy[0] + rect_curr->dxy[0] -  self->bot_pose_last->pos[0],
                                                  self->obstacles_last->rects.xy[1] + rect_curr->dxy[1] -  self->bot_pose_last->pos[1]);
 
@@ -587,7 +588,7 @@ int free_for_rotation(state_t *self){
 
         if(self->sim_rect_last){
             for(int i=0; i < self->sim_rect_last->num_rects; i++){
-                erlcm_rect_t *rect_curr =  &(self->sim_rect_last->rects[i]);
+                obs_rect_t *rect_curr =  &(self->sim_rect_last->rects[i]);
                 double absolute_distance = hypot(self->sim_rect_last->xy[0] + rect_curr->dxy[0] -  self->bot_pose_last->pos[0],
                                                  self->sim_rect_last->xy[1] + rect_curr->dxy[1] -  self->bot_pose_last->pos[1]);
 
@@ -629,7 +630,7 @@ free_for_drive_to_target (state_t *self, double start_x, double start_y,
             if(self->obstacles_last){
                 for(int i=0; i < self->obstacles_last->rects.num_rects; i++){
 
-                    erlcm_rect_t *rect_curr =  &(self->obstacles_last->rects.rects[i]);
+                    obs_rect_t *rect_curr =  &(self->obstacles_last->rects.rects[i]);
                     double absolute_distance = hypot(self->obstacles_last->rects.xy[0] + rect_curr->dxy[0] -  line_x,
                                                      self->obstacles_last->rects.xy[1] + rect_curr->dxy[1] -  line_y);
 
@@ -650,7 +651,7 @@ free_for_drive_to_target (state_t *self, double start_x, double start_y,
             // Check simulated obstacles
             if(self->sim_rect_last){
                 for(int i=0; i < self->sim_rect_last->num_rects; i++){
-                    erlcm_rect_t *rect_curr =  &(self->sim_rect_last->rects[i]);
+                    obs_rect_t *rect_curr =  &(self->sim_rect_last->rects[i]);
                     double absolute_distance = hypot(self->sim_rect_last->xy[0] + rect_curr->dxy[0] -  line_x,
                                                      self->sim_rect_last->xy[1] + rect_curr->dxy[1] -  line_y);
 
@@ -770,7 +771,7 @@ manipulation_controller_turn_towards_target (state_t *self,
     double max_rv = self->max_rv;
     if (fabs(self->bot_pose_last->vel[0]) < self->thresh_tv)
         max_rv = self->max_rv_in_place;
-    
+
 
     double rv = 0;
 
@@ -1649,9 +1650,9 @@ int main (int argc, char *argv[])
 
     /******************************************************************/
 
-    erlcm_rect_list_t_subscribe(self->lcm, "SIM_RECTS", on_sim_rects, self);
+    obs_rect_list_t_subscribe(self->lcm, "SIM_RECTS", on_sim_rects, self);
 
-    erlcm_obstacle_list_t_subscribe (self->lcm, "OBSTACLES", on_obstacles, self);
+    obs_obstacle_list_t_subscribe (self->lcm, "OBSTACLES", on_obstacles, self);
 
     /* if (self->subservient_to_joystick) */
     /*     erlcm_joystick_state_t_subscribe (self->lcm, "PS3_JS_CMD", on_joystick_state, self); */
