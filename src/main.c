@@ -129,8 +129,8 @@ struct _state_t {
 
 int
 mp_reset_variables (state_t *self) {
-    self->tc_state = ERLCM_TRAJECTORY_CONTROLLER_STATUS_T_STATE_IDLE;
-    self->tc_error_mode = ERLCM_TRAJECTORY_CONTROLLER_STATUS_T_ERROR_NONE;
+    self->tc_state = RIPL_TRAJECTORY_CONTROLLER_STATUS_T_STATE_IDLE;
+    self->tc_error_mode = RIPL_TRAJECTORY_CONTROLLER_STATUS_T_ERROR_NONE;
 
 }
 
@@ -214,8 +214,8 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
        self->ref_point_list->num_ref_points == 0 ||
        msg->num_ref_points == 0 ||
        self->current_ref_point > self->ref_point_list->commited_point_id ||
-       self->ref_point_list->mode == ERLCM_REF_POINT_LIST_T_TURN_IN_PLACE ||
-       msg->mode == ERLCM_REF_POINT_LIST_T_TURN_IN_PLACE ||
+       self->ref_point_list->mode == RIPL_REF_POINT_LIST_T_TURN_IN_PLACE ||
+       msg->mode == RIPL_REF_POINT_LIST_T_TURN_IN_PLACE ||
        self->ref_point_list->commited_point_id == -1){
         //(msg->num_ref_points > 1 && msg->commited_point_id == msg->num_ref_points -1)){//if there was no commited point in the last list - do not merge
 
@@ -246,14 +246,14 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
             ripl_ref_point_list_t_destroy (self->ref_point_list);
         self->ref_point_list = ripl_ref_point_list_t_copy(msg);
 
-        if(self->ref_point_list->mode == ERLCM_REF_POINT_LIST_T_TURN_IN_PLACE){
+        if(self->ref_point_list->mode == RIPL_REF_POINT_LIST_T_TURN_IN_PLACE){
             self->turn_in_place = 1;
         }
-        else if(self->ref_point_list->mode == ERLCM_REF_POINT_LIST_T_NORMAL_MOTION){
+        else if(self->ref_point_list->mode == RIPL_REF_POINT_LIST_T_NORMAL_MOTION){
             self->turn_in_place = 0;
         }
 
-        self->goal_state = ERLCM_RRT_GOAL_STATUS_T_ACTIVE;
+        self->goal_state = RIPL_RRT_GOAL_STATUS_T_ACTIVE;
 
         self->num_ref_points = self->ref_point_list->num_ref_points - 1;
 
@@ -370,14 +370,14 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
 
         self->ref_point_list = new_list;
 
-        if(self->ref_point_list->mode == ERLCM_REF_POINT_LIST_T_TURN_IN_PLACE){
+        if(self->ref_point_list->mode == RIPL_REF_POINT_LIST_T_TURN_IN_PLACE){
             self->turn_in_place = 1;
         }
-        else if(self->ref_point_list->mode == ERLCM_REF_POINT_LIST_T_NORMAL_MOTION){
+        else if(self->ref_point_list->mode == RIPL_REF_POINT_LIST_T_NORMAL_MOTION){
             self->turn_in_place = 0;
         }
 
-        self->goal_state = ERLCM_RRT_GOAL_STATUS_T_ACTIVE;
+        self->goal_state = RIPL_RRT_GOAL_STATUS_T_ACTIVE;
 
         self->num_ref_points = self->ref_point_list->num_ref_points - 1;
         self->current_ref_point = 0; //reset the current point
@@ -407,15 +407,15 @@ on_ref_point_list_old (const lcm_recv_buf_t *rbuf, const char *channel,
         ripl_ref_point_list_t_destroy (self->ref_point_list);
     self->ref_point_list = ripl_ref_point_list_t_copy(msg);
 
-    if(self->ref_point_list->mode == ERLCM_REF_POINT_LIST_T_TURN_IN_PLACE){
+    if(self->ref_point_list->mode == RIPL_REF_POINT_LIST_T_TURN_IN_PLACE){
         self->turn_in_place = 1;
     }
-    else if(self->ref_point_list->mode == ERLCM_REF_POINT_LIST_T_NORMAL_MOTION){
+    else if(self->ref_point_list->mode == RIPL_REF_POINT_LIST_T_NORMAL_MOTION){
         self->turn_in_place = 0;
     }
 
 
-    self->goal_state = ERLCM_RRT_GOAL_STATUS_T_ACTIVE;
+    self->goal_state = RIPL_RRT_GOAL_STATUS_T_ACTIVE;
 
     self->num_ref_points = self->ref_point_list->num_ref_points - 1;
     self->current_ref_point = 0;
@@ -490,7 +490,7 @@ on_motion_command (const lcm_recv_buf_t *rbuf, const char *channel,
 
     g_mutex_lock (self->mutex);
 
-    self->goal_state = ERLCM_RRT_GOAL_STATUS_T_IDLE;
+    self->goal_state = RIPL_RRT_GOAL_STATUS_T_IDLE;
 
     if(!strcmp(msg->cmd_type,"FOLLOWER") && !strcmp(msg->cmd_property, "STOP")){
         if (self->ref_point_list)
@@ -501,7 +501,7 @@ on_motion_command (const lcm_recv_buf_t *rbuf, const char *channel,
         fprintf(stderr,"Commanded to stop - stoping robot\n");
         self->stop_called = 1;
 
-        self->goal_state = ERLCM_RRT_GOAL_STATUS_T_FAILED;
+        self->goal_state = RIPL_RRT_GOAL_STATUS_T_FAILED;
         //we should declare failed/stopped
         // - maybe we should not flus this"
     }
@@ -1051,7 +1051,7 @@ on_trajectory_controller_timer (gpointer data)
     self->path_obstructed = FALSE;
 
     if (self->robot_status_last) {
-        if (!(self->robot_status_last->state == ERLCM_ROBOT_STATUS_T_STATE_RUN)) {
+        if (!(self->robot_status_last->state == RIPL_ROBOT_STATUS_T_STATE_RUN)) {
             if (self->verbose)
                 fprintf (stdout, "Robot must be in RUN state\n");
 
@@ -1091,7 +1091,7 @@ on_trajectory_controller_timer (gpointer data)
     else if(self->bot_pose_last == NULL){
         self->bot_pose_last = calloc(1, sizeof(bot_core_pose_t));
 
-        self->tc_error_mode = ERLCM_TRAJECTORY_CONTROLLER_STATUS_T_ERROR_NO_POSE;
+        self->tc_error_mode = RIPL_TRAJECTORY_CONTROLLER_STATUS_T_ERROR_NO_POSE;
         fprintf(stderr,"Exiting - No Pose\n");
         return TRUE;
     }
@@ -1410,13 +1410,13 @@ on_trajectory_controller_timer (gpointer data)
                                                                   self->ref_point_list->ref_points[self->current_ref_point].y,
                                                                   self->ref_point_list->ref_points[self->current_ref_point].t);
             if(ret_val==1){
-                self->goal_state = ERLCM_RRT_GOAL_STATUS_T_REACHED;
+                self->goal_state = RIPL_RRT_GOAL_STATUS_T_REACHED;
             }
             else if(ret_val ==0){
-                self->goal_state = ERLCM_RRT_GOAL_STATUS_T_ACTIVE;
+                self->goal_state = RIPL_RRT_GOAL_STATUS_T_ACTIVE;
             }
             else if(ret_val < 0){
-                self->goal_state = ERLCM_RRT_GOAL_STATUS_T_FAILED;
+                self->goal_state = RIPL_RRT_GOAL_STATUS_T_FAILED;
             }
 
 
@@ -1434,15 +1434,15 @@ on_trajectory_controller_timer (gpointer data)
 
         if((self->current_ref_point == self->num_ref_points) && !self->turn_in_place) {
             if(ret_val == 1){
-                self->goal_state = ERLCM_RRT_GOAL_STATUS_T_REACHED;
+                self->goal_state = RIPL_RRT_GOAL_STATUS_T_REACHED;
             }
             else if(ret_val < 0){
                 fprintf(stderr, "At last goal and error condition : %d\n", ret_val);
-                self->goal_state = ERLCM_RRT_GOAL_STATUS_T_FAILED;
+                self->goal_state = RIPL_RRT_GOAL_STATUS_T_FAILED;
             }
         }
         if(!self->turn_in_place && ret_val == 0){
-            self->goal_state = ERLCM_RRT_GOAL_STATUS_T_ACTIVE;
+            self->goal_state = RIPL_RRT_GOAL_STATUS_T_ACTIVE;
         }
 
         if (ret_val == 1){
@@ -1561,9 +1561,9 @@ int main (int argc, char *argv[])
         fprintf (stdout, "Checking the path %.2f meters ahead for collisions\n", self->collision_check_path_distance);
 
     self->error_mode = 0;
-    self->tc_state = ERLCM_TRAJECTORY_CONTROLLER_STATUS_T_STATE_IDLE;
-    self->tc_error_mode = ERLCM_TRAJECTORY_CONTROLLER_STATUS_T_ERROR_NONE;
-    self->goal_state = ERLCM_RRT_GOAL_STATUS_T_IDLE;
+    self->tc_state = RIPL_TRAJECTORY_CONTROLLER_STATUS_T_STATE_IDLE;
+    self->tc_error_mode = RIPL_TRAJECTORY_CONTROLLER_STATUS_T_ERROR_NONE;
+    self->goal_state = RIPL_RRT_GOAL_STATUS_T_IDLE;
 
     self->lcm = bot_lcm_get_global(NULL);
 
