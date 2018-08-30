@@ -67,10 +67,10 @@ struct _state_t {
 
     double collision_check_path_distance;
 
-    erlcm_guide_info_t *guide_pos;
+    ripl_guide_info_t *guide_pos;
 
     bot_core_pose_t *bot_pose_last;
-    erlcm_robot_status_t *robot_status_last;
+    ripl_robot_status_t *robot_status_last;
 
     int stop_called;
     int trash_wp;
@@ -79,7 +79,7 @@ struct _state_t {
 
     /****************************************/
     int new_ref_point;
-    erlcm_ref_point_list_t *ref_point_list;
+    ripl_ref_point_list_t *ref_point_list;
     int current_ref_point;
     int num_ref_points;
     int turn_in_place;
@@ -107,14 +107,14 @@ struct _state_t {
 
     int error_mode;
 
-    // State constants are defined in erlcm_trajectory_controller_status_t
+    // State constants are defined in ripl_trajectory_controller_status_t
     int32_t tc_state;
 
     int8_t goal_state;
 
     int goal_type;
 
-    // Error modes constants are defined in erlcm_trajectory_controller_status_t
+    // Error modes constants are defined in ripl_trajectory_controller_status_t
     int32_t tc_error_mode;
 
     mp_prediction_t *mp_prediction;
@@ -122,7 +122,7 @@ struct _state_t {
     obs_obstacle_list_t *obstacles_last;
     obs_rect_list_t *sim_rect_last;
 
-  //erlcm_joystick_state_t *joystick_state_msg;
+  //ripl_joystick_state_t *joystick_state_msg;
 
     gboolean path_obstructed;
 };
@@ -142,14 +142,14 @@ mp_can_cancel_state (state_t *self) {
 
 /* static void */
 /* on_joystick_state (const lcm_recv_buf_t *rbuf, const char *channel, */
-/*                    const erlcm_joystick_state_t *msg, void *user) { */
+/*                    const ripl_joystick_state_t *msg, void *user) { */
 
 /*     state_t *self = (state_t *) user; */
 
 /*     if (self->joystick_state_msg) */
-/*         erlcm_joystick_state_t_destroy (self->joystick_state_msg); */
+/*         ripl_joystick_state_t_destroy (self->joystick_state_msg); */
 
-/*     self->joystick_state_msg = erlcm_joystick_state_t_copy(msg); */
+/*     self->joystick_state_msg = ripl_joystick_state_t_copy(msg); */
 /* } */
 
 
@@ -189,7 +189,7 @@ on_sim_rects(const lcm_recv_buf_t * rbuf, const char *channel,
 
 static void
 on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
-                   const erlcm_ref_point_list_t *msg, void *user)
+                   const ripl_ref_point_list_t *msg, void *user)
 {
     state_t *self = user;
 
@@ -243,8 +243,8 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
                 msg->num_ref_points, msg->commited_point_id);
 
         if (self->ref_point_list)
-            erlcm_ref_point_list_t_destroy (self->ref_point_list);
-        self->ref_point_list = erlcm_ref_point_list_t_copy(msg);
+            ripl_ref_point_list_t_destroy (self->ref_point_list);
+        self->ref_point_list = ripl_ref_point_list_t_copy(msg);
 
         if(self->ref_point_list->mode == ERLCM_REF_POINT_LIST_T_TURN_IN_PLACE){
             self->turn_in_place = 1;
@@ -330,7 +330,7 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
         fprintf(stderr, "Current List size : %d Committed ID : %d New List size : %d New Committed ID : %d\n", self->ref_point_list->num_ref_points, self->ref_point_list->commited_point_id,
                 msg->num_ref_points, msg->commited_point_id);
 
-        erlcm_ref_point_list_t *new_list = (erlcm_ref_point_list_t *) calloc(1, sizeof(erlcm_ref_point_list_t));
+        ripl_ref_point_list_t *new_list = (ripl_ref_point_list_t *) calloc(1, sizeof(ripl_ref_point_list_t));
 
         new_list->id = self->ref_point_list->id;
         new_list->num_ref_points = self->ref_point_list->commited_point_id + 1 + msg->num_ref_points - self->current_ref_point;
@@ -343,9 +343,9 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
             new_list->commited_point_id = new_list->num_ref_points -1;
         }
 
-        erlcm_ref_point_t *list = calloc(new_list->num_ref_points, sizeof(erlcm_ref_point_t));
+        ripl_ref_point_t *list = calloc(new_list->num_ref_points, sizeof(ripl_ref_point_t));
         memcpy(list, &self->ref_point_list->ref_points[self->current_ref_point],
-               (self->ref_point_list->commited_point_id + 1 - self->current_ref_point) * sizeof(erlcm_ref_point_t));
+               (self->ref_point_list->commited_point_id + 1 - self->current_ref_point) * sizeof(ripl_ref_point_t));
 
         //reset the velocity values on these - otherwise robot will slow down at the old points
         fprintf(stderr, "Up to commit point : %d\n" , self->ref_point_list->commited_point_id + 1 - self->current_ref_point);
@@ -356,7 +356,7 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
             list[i].s = self->default_tv;
         }
 
-        memcpy(&list[self->ref_point_list->commited_point_id + 1 - self->current_ref_point], msg->ref_points, (msg->num_ref_points) * sizeof(erlcm_ref_point_t));
+        memcpy(&list[self->ref_point_list->commited_point_id + 1 - self->current_ref_point], msg->ref_points, (msg->num_ref_points) * sizeof(ripl_ref_point_t));
 
         new_list->ref_points = list;
 
@@ -366,7 +366,7 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
                 self->current_ref_point);
 
         if (self->ref_point_list)
-            erlcm_ref_point_list_t_destroy (self->ref_point_list);
+            ripl_ref_point_list_t_destroy (self->ref_point_list);
 
         self->ref_point_list = new_list;
 
@@ -392,7 +392,7 @@ on_ref_point_list (const lcm_recv_buf_t *rbuf, const char *channel,
 
 static void
 on_ref_point_list_old (const lcm_recv_buf_t *rbuf, const char *channel,
-                   const erlcm_ref_point_list_t *msg, void *user)
+                   const ripl_ref_point_list_t *msg, void *user)
 {
     state_t *self = user;
 
@@ -404,8 +404,8 @@ on_ref_point_list_old (const lcm_recv_buf_t *rbuf, const char *channel,
     //we need to create an amalgamted waypoint list - with the remaining points
 
     if (self->ref_point_list)
-        erlcm_ref_point_list_t_destroy (self->ref_point_list);
-    self->ref_point_list = erlcm_ref_point_list_t_copy(msg);
+        ripl_ref_point_list_t_destroy (self->ref_point_list);
+    self->ref_point_list = ripl_ref_point_list_t_copy(msg);
 
     if(self->ref_point_list->mode == ERLCM_REF_POINT_LIST_T_TURN_IN_PLACE){
         self->turn_in_place = 1;
@@ -448,16 +448,16 @@ on_bot_pose (const lcm_recv_buf_t *rbuf, const char *channel,
 
 static void
 on_guide_pose (const lcm_recv_buf_t *rbuf, const char *channel,
-               const erlcm_guide_info_t *msg, void *user)
+               const ripl_guide_info_t *msg, void *user)
 {
     state_t *self = (state_t*) user;
 
     g_mutex_lock (self->mutex);
 
     if (self->guide_pos)
-        erlcm_guide_info_t_destroy (self->guide_pos);
+        ripl_guide_info_t_destroy (self->guide_pos);
 
-    self->guide_pos = erlcm_guide_info_t_copy (msg);
+    self->guide_pos = ripl_guide_info_t_copy (msg);
 
     g_mutex_unlock (self->mutex);
 
@@ -466,16 +466,16 @@ on_guide_pose (const lcm_recv_buf_t *rbuf, const char *channel,
 
 static void
 on_robot_status (const lcm_recv_buf_t *rbuf, const char *channel,
-                 const erlcm_robot_status_t *msg, void *user)
+                 const ripl_robot_status_t *msg, void *user)
 {
     state_t *self = (state_t *) user;
 
     g_mutex_lock (self->mutex);
 
     if (self->robot_status_last)
-        erlcm_robot_status_t_destroy (self->robot_status_last);
+        ripl_robot_status_t_destroy (self->robot_status_last);
 
-    self->robot_status_last = erlcm_robot_status_t_copy (msg);
+    self->robot_status_last = ripl_robot_status_t_copy (msg);
 
     g_mutex_unlock (self->mutex);
 
@@ -484,7 +484,7 @@ on_robot_status (const lcm_recv_buf_t *rbuf, const char *channel,
 
 static void
 on_motion_command (const lcm_recv_buf_t *rbuf, const char *channel,
-                 const erlcm_speech_cmd_t *msg, void *user)
+                 const ripl_speech_cmd_t *msg, void *user)
 {
     state_t *self = (state_t *) user;
 
@@ -494,7 +494,7 @@ on_motion_command (const lcm_recv_buf_t *rbuf, const char *channel,
 
     if(!strcmp(msg->cmd_type,"FOLLOWER") && !strcmp(msg->cmd_property, "STOP")){
         if (self->ref_point_list)
-            erlcm_ref_point_list_t_destroy (self->ref_point_list);
+            ripl_ref_point_list_t_destroy (self->ref_point_list);
         self->ref_point_list = NULL;
         self->current_ref_point = 0;
         self->num_ref_points = -1;
@@ -516,7 +516,7 @@ on_status_timer (gpointer data)
 {
     state_t * self = (state_t *) data;
 
-    erlcm_trajectory_controller_status_t msg = {
+    ripl_trajectory_controller_status_t msg = {
         .utime = bot_timestamp_now(),
         .num_cur_ref_points = self->num_ref_points,
         .trans_vel = self->translational_vel_last,
@@ -525,7 +525,7 @@ on_status_timer (gpointer data)
         .error_mode = self->tc_error_mode
     };
 
-    erlcm_trajectory_controller_status_t_publish (self->lcm, "TRAJECTORY_CONTROLLER_STATUS", &msg);
+    ripl_trajectory_controller_status_t_publish (self->lcm, "TRAJECTORY_CONTROLLER_STATUS", &msg);
 
     int32_t id = -1;
 
@@ -533,13 +533,13 @@ on_status_timer (gpointer data)
         id = self->ref_point_list->id;
     }
 
-    erlcm_rrt_goal_status_t s_msg = {
+    ripl_rrt_goal_status_t s_msg = {
         .utime = bot_timestamp_now(),
         .id = id,
         .status = self->goal_state
     };
 
-    erlcm_rrt_goal_status_t_publish(self->lcm,
+    ripl_rrt_goal_status_t_publish(self->lcm,
                                     "TRAJECTORY_CONTROLLER_GOAL_STATUS",
                                     &s_msg);
 
@@ -555,12 +555,12 @@ void
 robot_velocity_command(double tv, double rv, lcm_t* lcm)
 {
 
-  erlcm_velocity_msg_t v;
+  ripl_velocity_msg_t v;
 
   v.tv = tv;
   v.rv = rv;
   v.utime = bot_timestamp_now();
-  erlcm_velocity_msg_t_publish(lcm,"ROBOT_VELOCITY_CMD",&v);
+  ripl_velocity_msg_t_publish(lcm,"ROBOT_VELOCITY_CMD",&v);
 }
 
 
@@ -1633,18 +1633,18 @@ int main (int argc, char *argv[])
 
     bot_core_pose_t_subscribe (self->lcm, "POSE", on_bot_pose, self);
 
-    erlcm_guide_info_t_subscribe (self->lcm, "GUIDE_POS", on_guide_pose, self);
+    ripl_guide_info_t_subscribe (self->lcm, "GUIDE_POS", on_guide_pose, self);
 
     // subscribe to the robot_status message
-    erlcm_robot_status_t_subscribe (self->lcm, "ROBOT_STATUS", on_robot_status, self);
+    ripl_robot_status_t_subscribe (self->lcm, "ROBOT_STATUS", on_robot_status, self);
 
-    erlcm_speech_cmd_t_subscribe (self->lcm, "WAYPOINT_NAVIGATOR", on_motion_command, self);
-
-    // subscribe to the ref_point list message
-    erlcm_ref_point_list_t_subscribe (self->lcm, "GOAL_REF_LIST", on_ref_point_list, self);
+    ripl_speech_cmd_t_subscribe (self->lcm, "WAYPOINT_NAVIGATOR", on_motion_command, self);
 
     // subscribe to the ref_point list message
-    erlcm_ref_point_list_t_subscribe (self->lcm, "ELEVATOR_GOAL_REF_LIST", on_ref_point_list, self);
+    ripl_ref_point_list_t_subscribe (self->lcm, "GOAL_REF_LIST", on_ref_point_list, self);
+
+    // subscribe to the ref_point list message
+    ripl_ref_point_list_t_subscribe (self->lcm, "ELEVATOR_GOAL_REF_LIST", on_ref_point_list, self);
 
 
 
@@ -1655,7 +1655,7 @@ int main (int argc, char *argv[])
     obs_obstacle_list_t_subscribe (self->lcm, "OBSTACLES", on_obstacles, self);
 
     /* if (self->subservient_to_joystick) */
-    /*     erlcm_joystick_state_t_subscribe (self->lcm, "PS3_JS_CMD", on_joystick_state, self); */
+    /*     ripl_joystick_state_t_subscribe (self->lcm, "PS3_JS_CMD", on_joystick_state, self); */
 
 
     self->mutex = g_mutex_new();

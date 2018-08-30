@@ -480,7 +480,7 @@ mp_control_compute_lon_control_via_target_pose (mp_control_utils_t *self, double
 int
 mp_control_publish_aux_message (lcm_t *lcm, mp_control_utils_t *self) {
 
-    erlcm_trajectory_controller_aux_t mc_aux = {
+    ripl_trajectory_controller_aux_t mc_aux = {
         .utime = bot_timestamp_now (),
         .integral = self->mp_control_aux.integral,
         .proportional = self->mp_control_aux.proportional,
@@ -502,7 +502,7 @@ mp_control_publish_aux_message (lcm_t *lcm, mp_control_utils_t *self) {
         .target_y = self->mp_control_aux.target_y,
         .target_yaw = self->mp_control_aux.target_yaw
     };
-    erlcm_trajectory_controller_aux_t_publish (lcm, "TRAJECTORY_CONTROLLER_AUX", &mc_aux);
+    ripl_trajectory_controller_aux_t_publish (lcm, "TRAJECTORY_CONTROLLER_AUX", &mc_aux);
 
     return 1;
 }
@@ -564,7 +564,7 @@ mp_control_compute_lon_control_backup (mp_control_utils_t *self, double *control
 
 /*
 int
-mp_control_find_first_point_in_front (mp_control_utils_t *self, erlcm_engagement_plan_t *ep)
+mp_control_find_first_point_in_front (mp_control_utils_t *self, ripl_engagement_plan_t *ep)
 {
 
     if ( (!ep) ||  (!self->bot_states) ) {
@@ -589,7 +589,7 @@ mp_control_find_first_point_in_front (mp_control_utils_t *self, erlcm_engagement
 
 
 int
-mp_control_compute_projection_onto_traj (mp_control_utils_t *self, erlcm_engagement_plan_t *ep, int point_in_front,
+mp_control_compute_projection_onto_traj (mp_control_utils_t *self, ripl_engagement_plan_t *ep, int point_in_front,
                                          double *x_proj, double *y_proj, double *theta_proj)
 {
     // For now assume that the points in the trajectory are very dense and that the
@@ -620,13 +620,13 @@ mp_control_update_traj (mp_control_utils_t *self) {
 
 
 int
-mp_control_set_trajectory (mp_control_utils_t *self, erlcm_engagement_plan_t *ep) {
+mp_control_set_trajectory (mp_control_utils_t *self, ripl_engagement_plan_t *ep) {
     return 1;
 }
 
 
 int
-mp_control_compute_control_steer_via_traj (mp_control_utils_t *self, erlcm_engagement_plan_t *ep,
+mp_control_compute_control_steer_via_traj (mp_control_utils_t *self, ripl_engagement_plan_t *ep,
                                            double *steer_angle)
 {
     // TODO: update the trajectory points according to the moving pallet

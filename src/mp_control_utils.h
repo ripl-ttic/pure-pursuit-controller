@@ -137,20 +137,20 @@ mp_control_publish_aux_message (lcm_t *lcm, mp_control_utils_t *self);
 /*
 
 int 
-mp_control_set_trajectory (mp_control_utils_t *self, erlcm_engagement_plan_t *ep);
+mp_control_set_trajectory (mp_control_utils_t *self, ripl_engagement_plan_t *ep);
 
 int 
 mp_control_update_traj (mp_control_utils_t *self);
 
 int
-mp_control_find_first_point_in_front (mp_control_utils_t *self, erlcm_engagement_plan_t *ep);
+mp_control_find_first_point_in_front (mp_control_utils_t *self, ripl_engagement_plan_t *ep);
 
 int 
-mp_control_compute_projection_onto_traj (mp_control_utils_t *self, erlcm_engagement_plan_t *ep, int point_in_front,
+mp_control_compute_projection_onto_traj (mp_control_utils_t *self, ripl_engagement_plan_t *ep, int point_in_front,
                                          double *x_proj, double *y_proj, double *theta_proj);
 
 int 
-mp_control_compute_control_steer_via_traj (mp_control_utils_t *self, erlcm_engagement_plan_t *ep, 
+mp_control_compute_control_steer_via_traj (mp_control_utils_t *self, ripl_engagement_plan_t *ep, 
                                            double *steer_angle);
 
 */

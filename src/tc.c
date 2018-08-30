@@ -69,7 +69,7 @@ tc_destroy (TrajectoryController *self)
         globals_release_ctrans (self->ctrans);
 
     if (self->mast_command_last)
-        erlcm_actuation_command_mast_t_destroy (self->mast_command_last);
+        ripl_actuation_command_mast_t_destroy (self->mast_command_last);
 
     if (self->lcm)
         globals_release_lcm (self->lcm);
@@ -78,8 +78,8 @@ tc_destroy (TrajectoryController *self)
 }
 
 
-erlcm_manipulation_planner_action_enum_t tc_next_action ( erlcm_manipulation_planner_job_enum_t current_job,
-							  erlcm_manipulation_planner_action_enum_t current_action)
+ripl_manipulation_planner_action_enum_t tc_next_action ( ripl_manipulation_planner_job_enum_t current_job,
+							  ripl_manipulation_planner_action_enum_t current_action)
 {
     // A deterministic state machine for each job type
     if ( current_job == ERLCM_MANIPULATION_PLANNER_JOB_ENUM_T_PICKUP_PALLET) {

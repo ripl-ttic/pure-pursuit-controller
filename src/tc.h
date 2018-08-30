@@ -47,9 +47,9 @@ struct _TrajectoryController {
     MTrans *mtrans;
     trajectory_controller_params_t params;
 
-    erlcm_actuation_command_mast_t *mast_command_last;
-    erlcm_trajectory_controller_job_enum_t current_manipulation_job;
-    erlcm_trajectory_controller_action_enum_t current_manipulation_action;
+    ripl_actuation_command_mast_t *mast_command_last;
+    ripl_trajectory_controller_job_enum_t current_manipulation_job;
+    ripl_trajectory_controller_action_enum_t current_manipulation_action;
     gboolean manipulation_standby;
 };
 
@@ -58,7 +58,7 @@ TrajectoryController * tc_new ();
 
 void tc_destroy (TrajectoryController *self);
 
-erlcm_trajectory_controller_action_enum_t tc_next_action ( erlcm_trajectory_controller_job_enum_t current_job,
-                                                          erlcm_trajectory_controller_action_enum_t current_action);
+ripl_trajectory_controller_action_enum_t tc_next_action ( ripl_trajectory_controller_job_enum_t current_job,
+                                                          ripl_trajectory_controller_action_enum_t current_action);
 
 #endif
