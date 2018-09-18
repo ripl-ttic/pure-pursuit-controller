@@ -3,11 +3,6 @@
 #include <getopt.h>
 #include <string.h>
 
-#include <bot_core/bot_core.h>
-#include <lcmtypes/hr_lcmtypes.h>
-#include <lcmtypes/rrtstar.h>
-#include <lcmtypes/obs_lcmtypes.h>
-
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
@@ -16,9 +11,15 @@
 #include <GL/glu.h>
 #endif
 
+#include <bot_core/bot_core.h>
+#include <bot_param/param_client.h>
+#include <lcmtypes/hr_lcmtypes.h>
+#include <lcmtypes/rrtstar.h>
+#include <lcmtypes/obs_lcmtypes.h>
+
 #include "mp_control_utils.h"
 #include "mp_prediction.h"
-#include <bot_param/param_client.h>
+
 
 
 #define ENABLE_TELEPORT 0
