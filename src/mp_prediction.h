@@ -14,7 +14,7 @@
 #include <bot_lcmgl_client/lcmgl.h>
 
 #include <lcmtypes/hr_lcmtypes.h>
-#include <lcmtypes/obs_lcmtypes.h>
+#include <lcmtypes/obstacle_detector_lcmtypes.h>
 
 
 typedef struct _mp_state_t {

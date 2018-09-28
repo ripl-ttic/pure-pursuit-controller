@@ -15,7 +15,7 @@
 #include <bot_param/param_client.h>
 #include <lcmtypes/hr_lcmtypes.h>
 #include <lcmtypes/rrtstar_lcmtypes.h>
-#include <lcmtypes/obs_lcmtypes.h>
+#include <lcmtypes/obstacle_detector_lcmtypes.h>
 
 #include "mp_control_utils.h"
 #include "mp_prediction.h"
