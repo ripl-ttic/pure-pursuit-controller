@@ -14,7 +14,7 @@
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
 #include <lcmtypes/hr_lcmtypes.h>
-#include <lcmtypes/rrtstar.h>
+#include <lcmtypes/rrtstar_lcmtypes.h>
 #include <lcmtypes/obs_lcmtypes.h>
 
 #include "mp_control_utils.h"

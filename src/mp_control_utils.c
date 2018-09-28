@@ -4,14 +4,7 @@
 
 #include <bot_core/bot_core.h>
 
-/*
-#include <common/geometry.h>
-#include <common/math_util.h>
-#include <common/globals.h>
-#include <common/arconf.h>
-*/
-
-#include <lcmtypes/rrtstar.h>
+#include <lcmtypes/rrtstar_lcmtypes.h>
 
 #include "mp_control_utils.h"
 
