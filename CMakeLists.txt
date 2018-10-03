@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6.0)
 
 # pull in the pods macros. See cmake/pods.cmake for documentation
-set(POD_NAME pure_controller)
+set(POD_NAME pure-pursuit-controller)
 include(cmake/pods.cmake)
 
 # create an executable, and make it public
