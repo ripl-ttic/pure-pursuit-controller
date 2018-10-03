@@ -13,7 +13,7 @@
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
-#include <lcmtypes/hr_lcmtypes.h>
+#include <lcmtypes/robot_status.h>
 #include <lcmtypes/rrtstar_lcmtypes.h>
 #include <lcmtypes/obstacle_detector_lcmtypes.h>
 
@@ -63,12 +63,9 @@ struct _state_t {
 
     int verbose;
 
-  //int subservient_to_joystick;
     int perform_collision_check;
 
     double collision_check_path_distance;
-
-    ripl_guide_info_t *guide_pos;
 
     bot_core_pose_t *bot_pose_last;
     ripl_robot_status_t *robot_status_last;
@@ -85,7 +82,6 @@ struct _state_t {
     int num_ref_points;
     int turn_in_place;
     /****************************************/
-    int envoy;
 
     // Default translational and maximum rotational velocities defined in param config
     double default_tv;
@@ -123,8 +119,6 @@ struct _state_t {
     obs_obstacle_list_t *obstacles_last;
     obs_rect_list_t *sim_rect_last;
 
-  //ripl_joystick_state_t *joystick_state_msg;
-
     gboolean path_obstructed;
 };
 
@@ -139,20 +133,6 @@ int
 mp_can_cancel_state (state_t *self) {
     return 0;
 }
-
-
-/* static void */
-/* on_joystick_state (const lcm_recv_buf_t *rbuf, const char *channel, */
-/*                    const ripl_joystick_state_t *msg, void *user) { */
-
-/*     state_t *self = (state_t *) user; */
-
-/*     if (self->joystick_state_msg) */
-/*         ripl_joystick_state_t_destroy (self->joystick_state_msg); */
-
-/*     self->joystick_state_msg = ripl_joystick_state_t_copy(msg); */
-/* } */
-
 
 static void
 on_obstacles (const lcm_recv_buf_t *rbuf, const char *channel,
@@ -448,24 +428,6 @@ on_bot_pose (const lcm_recv_buf_t *rbuf, const char *channel,
 }
 
 static void
-on_guide_pose (const lcm_recv_buf_t *rbuf, const char *channel,
-               const ripl_guide_info_t *msg, void *user)
-{
-    state_t *self = (state_t*) user;
-
-    g_mutex_lock (self->mutex);
-
-    if (self->guide_pos)
-        ripl_guide_info_t_destroy (self->guide_pos);
-
-    self->guide_pos = ripl_guide_info_t_copy (msg);
-
-    g_mutex_unlock (self->mutex);
-
-    return;
-}
-
-static void
 on_robot_status (const lcm_recv_buf_t *rbuf, const char *channel,
                  const ripl_robot_status_t *msg, void *user)
 {
@@ -477,35 +439,6 @@ on_robot_status (const lcm_recv_buf_t *rbuf, const char *channel,
         ripl_robot_status_t_destroy (self->robot_status_last);
 
     self->robot_status_last = ripl_robot_status_t_copy (msg);
-
-    g_mutex_unlock (self->mutex);
-
-    return;
-}
-
-static void
-on_motion_command (const lcm_recv_buf_t *rbuf, const char *channel,
-                 const ripl_speech_cmd_t *msg, void *user)
-{
-    state_t *self = (state_t *) user;
-
-    g_mutex_lock (self->mutex);
-
-    self->goal_state = RIPL_RRT_GOAL_STATUS_T_IDLE;
-
-    if(!strcmp(msg->cmd_type,"FOLLOWER") && !strcmp(msg->cmd_property, "STOP")){
-        if (self->ref_point_list)
-            ripl_ref_point_list_t_destroy (self->ref_point_list);
-        self->ref_point_list = NULL;
-        self->current_ref_point = 0;
-        self->num_ref_points = -1;
-        fprintf(stderr,"Commanded to stop - stoping robot\n");
-        self->stop_called = 1;
-
-        self->goal_state = RIPL_RRT_GOAL_STATUS_T_FAILED;
-        //we should declare failed/stopped
-        // - maybe we should not flus this"
-    }
 
     g_mutex_unlock (self->mutex);
 
@@ -676,55 +609,6 @@ free_for_drive_to_target (state_t *self, double start_x, double start_y,
 
 
 int
-manipulation_controller_turn_towards_target_local (state_t *self,
-                                             double target_x,        // Target states
-                                             double target_y,
-                                             double target_t) {
-    //for nwo something basic
-
-    //these are relative to the robot
-
-    double heading_to_person = atan2(target_y, target_x);
-    double distance_to_person = hypot(target_x, target_y);
-    double heading_max = bot_to_radians(120);
-    double threshold = bot_to_radians(40);
-
-    double rv = 0;
-
-    //we should check if safe to turn
-    if(distance_to_person < 5.0 && distance_to_person > 1.0){
-
-        if(fabs(heading_to_person) < bot_to_radians(10)){
-            fprintf(stderr, "Person within heading - Doing nothing\n");
-        }
-        else{
-            //not sure if we should lock the mutex???
-	    int is_free = 1;
-	    if (self->perform_collision_check)
-	        is_free = free_for_rotation(self);
-
-            if(is_free){
-
-                rv = bot_clamp(heading_to_person, -threshold, threshold) / heading_max * M_PI;
-                if (self->verbose)
-                    fprintf(stderr, "Turning Towards person %f \n", rv);
-            }
-            else{
-                rv = 0;
-                fprintf(stderr, "can't Turn - obtacle \n");
-            }
-        }
-    }
-    else{
-        fprintf(stderr, "Person Too far/too close - not turning\n");
-    }
-
-    robot_velocity_command(0, rv, self->lcm);
-
-}
-
-
-int
 manipulation_controller_turn_towards_target (state_t *self,
                                              double target_x,        // Target states
                                              double target_y,
@@ -873,65 +757,6 @@ manipulation_controller_drive_to_target (state_t *self,
     int ret_compute_control_steer =
         mp_control_compute_control_steer_via_target_pose (self->mp_cont, &steer_cmd);
 
-    //we need to clamp this steering command - and also reduce the TV in cases of clamping
-    //double max_rv = 1.0;//0.5;//1.5;
-
-    //we only care about the person when not doing elevator/portal related stuff
-    if(self->envoy && (self->goal_type == 0)){//basic setting
-        if(self->guide_pos && self->guide_pos->tracking_state){
-            //have guide msg and have tracking
-            if(self->guide_pos->pos[0] < - 2.5){
-                //ramp speed down - dont try to match it
-
-                if((bot_timestamp_now() - last_time)/ 1.0e6  > 0.2){
-                    self->current_tv -= 0.05;
-                    self->current_tv = bot_max(0, self->current_tv);
-                    last_time = bot_timestamp_now ();
-                }
-            }
-
-            if(self->guide_pos->pos[0] > - 2.0){ //bad idea - this will reduce the velocity too quickly
-                //ramp speed down - dont try to match it
-                if((bot_timestamp_now() - last_time)/ 1.0e6  > 0.2){
-                    self->current_tv += 0.05;
-                    //***** This is the change point
-                    self->current_tv = bot_min(v_cmd, self->current_tv);
-                    //self->current_tv = bot_min(0.5, self->current_tv);
-                    last_time = bot_timestamp_now ();
-                }
-            }
-        }
-        else{
-            fprintf(stderr, " In Envoy mode and can't spot the person - not moving\n");
-            self->current_tv = 0;
-        }
-        //***** This is the change point
-        self->current_tv = bot_min(v_cmd, self->current_tv);
-        //Done change point
-        v_cmd = self->current_tv;
-    }
-
-
-
-    // Check to see that the path to the goal is collision-free by approximating it
-    // as a straight-line path
-    //if (!free_for_drive_to_target (self, target_x, target_y, target_t)) {
-    if (0) {
-        fprintf (stdout, "Obstacle detected on path to next reference point. Stopping robot!\n");
-
-        double tv = 0;
-        double rv = 0;
-
-        robot_velocity_command(tv, rv, self->lcm);
-        mp_control_update_aux_actuation (self->mp_cont, tv, rv);
-        mp_control_publish_aux_message (self->lcm, self->mp_cont);
-
-        return -5;
-    }
-
-
-
-
     //assuming that this is the curvature - prob wrong :)
     //  double
     // Model for steered car which seems to assume 1m wheelbase
@@ -1068,26 +893,13 @@ on_trajectory_controller_timer (gpointer data)
 
 
     if(self->num_ref_points == -1){
-        //now we should check if we have a valid person and turn towards him/her
-        if(self->guide_pos && !self->stop_called){
-            //check if we have a valid guide pos
-            if(self->guide_pos->tracking_state ==1){
-                if(self->verbose)
-                    fprintf(stderr, "Turning towards the person - not implemented\n");
 
-                //turn towards the person
-                //manipulation_controller_turn_towards_target(self, self->guide_pos->pos[0],
-                //                                            self->guide_pos->pos[1], self->guide_pos->person_heading);
-            }
-        }
-        else{
-            if(self->verbose)
-                printf("Waiting for ref_points...\n");
+        if(self->verbose)
+            printf("Waiting for ref_points...\n");
 
-            self->translational_vel_last = 0.0;
-            self->rotational_vel_last = 0.0;
-            robot_velocity_command(0, 0, self->lcm);
-        }
+        self->translational_vel_last = 0.0;
+        self->rotational_vel_last = 0.0;
+        robot_velocity_command(0, 0, self->lcm);
     }
     else if(self->bot_pose_last == NULL){
         self->bot_pose_last = calloc(1, sizeof(bot_core_pose_t));
@@ -1504,9 +1316,7 @@ usage (int argc, char ** argv)
 {
     fprintf (stdout, "Usage: %s [options]\n"
              "\n"
-             "    -e             Run in envoy mode\n"
              "    -a             Replace current waypoints with new waypoints\n"
-             //"    -j             Subservient to joystick (L1 button must be depressed)\n"
              "    -D             Disable collision check\n"
              "    -d DISTANCE    Check for collisions up to DISTANCE along path\n"
              "    -v             Verbose output\n"
@@ -1526,7 +1336,7 @@ int main (int argc, char *argv[])
     self->perform_collision_check = 1;
     self->collision_check_path_distance = COLLISION_CHECK_PATH_DISTANCE;
 
-    while ((c = getopt (argc, argv, "evhajDd:")) >= 0) {
+    while ((c = getopt (argc, argv, "vhajDd:")) >= 0) {
         switch (c) {
             case 'v':
                 self->verbose = 1;
@@ -1539,12 +1349,6 @@ int main (int argc, char *argv[])
             case 'a':
                 self->trash_wp = 1;
                 break;
-            case 'e':
-                self->envoy = 1;
-                break;
-		//case 'j':
-                //self->subservient_to_joystick = 1;
-                //break;
             case 'h':
             case '?':
                 usage (argc, argv);
@@ -1630,16 +1434,10 @@ int main (int argc, char *argv[])
     self->ref_point_list = NULL;
     /****************************************************/
 
-    self->guide_pos = NULL;
-
     bot_core_pose_t_subscribe (self->lcm, "POSE", on_bot_pose, self);
-
-    ripl_guide_info_t_subscribe (self->lcm, "GUIDE_POS", on_guide_pose, self);
 
     // subscribe to the robot_status message
     ripl_robot_status_t_subscribe (self->lcm, "ROBOT_STATUS", on_robot_status, self);
-
-    ripl_speech_cmd_t_subscribe (self->lcm, "WAYPOINT_NAVIGATOR", on_motion_command, self);
 
     // subscribe to the ref_point list message
     ripl_ref_point_list_t_subscribe (self->lcm, "GOAL_REF_LIST", on_ref_point_list, self);
@@ -1654,10 +1452,6 @@ int main (int argc, char *argv[])
     obs_rect_list_t_subscribe(self->lcm, "SIM_RECTS", on_sim_rects, self);
 
     obs_obstacle_list_t_subscribe (self->lcm, "OBSTACLES", on_obstacles, self);
-
-    /* if (self->subservient_to_joystick) */
-    /*     ripl_joystick_state_t_subscribe (self->lcm, "PS3_JS_CMD", on_joystick_state, self); */
-
 
     self->mutex = g_mutex_new();
     if (!self->mutex) {
