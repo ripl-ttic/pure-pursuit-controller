@@ -20,7 +20,8 @@ pods_use_pkg_config_packages(pp-controller
   lcmtypes_rrtstar
   lcmtypes_obstacle-detector
   lcmtypes_robot-status
-  check_gridmap
+  lcmtypes_ripl-general
+  check-gridmap
   )
 
 pods_install_executables(pp-controller)

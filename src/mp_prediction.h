@@ -13,7 +13,7 @@
 #include <bot_core/bot_core.h>
 #include <bot_lcmgl_client/lcmgl.h>
 
-#include <lcmtypes/hr_lcmtypes.h>
+#include <lcmtypes/ripl_general_lcmtypes.h>
 #include <lcmtypes/obstacle_detector_lcmtypes.h>
 
 
